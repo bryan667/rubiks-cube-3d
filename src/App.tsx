@@ -67,6 +67,10 @@ function App() {
   }, [isRotating, orbitEnabled])
 
   const handleReset = () => {
+    if (!window.confirm('Do you want to reset the cube?')) {
+      return
+    }
+
     setCubeInstance((value) => value + 1)
     setMoveCount(0)
     setHistory([])
@@ -79,6 +83,10 @@ function App() {
   }
 
   const handleScramble = () => {
+    if (!window.confirm('Do you want to scramble the cube?')) {
+      return
+    }
+
     setHasStarted(true)
     setTimerSeconds(0)
     setIsSolved(false)

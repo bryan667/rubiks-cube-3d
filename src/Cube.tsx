@@ -4,6 +4,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -32,11 +33,27 @@ const LOCAL_FACE_NORMALS = [
   new THREE.Vector3(0, 0, -1),
 ] as const
 
-export type Move = 'U' | 'D' | 'L' | 'R' | 'F' | 'B'
+type FaceKey = 'U' | 'D' | 'L' | 'R' | 'F' | 'B'
+
+export type Move =
+  | 'U'
+  | "U'"
+  | 'D'
+  | "D'"
+  | 'L'
+  | "L'"
+  | 'R'
+  | "R'"
+  | 'F'
+  | "F'"
+  | 'B'
+  | "B'"
 
 export type CubeHandle = {
   enqueueMove: (move: Move) => void
   scramble: (count?: number) => void
+  getRootObject: () => THREE.Group | null
+  getLayerCubeletIds: (move: Move) => string[]
 }
 
 type CubeletData = {
@@ -54,21 +71,25 @@ type RotationState = {
 }
 
 type CubeProps = {
+  highlightedCubeletIds?: string[]
   onMoveComplete: (move: Move) => void
   onRotateStateChange: (isRotating: boolean) => void
   onSolvedChange: (isSolved: boolean) => void
 }
 
-const MOVE_CONFIG: Record<
-  Move,
-  { axis: 'x' | 'y' | 'z'; coord: number; angle: number }
-> = {
+const MOVE_CONFIG: Record<Move, { axis: 'x' | 'y' | 'z'; coord: number; angle: number }> = {
   U: { axis: 'y', coord: 1, angle: -Math.PI / 2 },
+  "U'": { axis: 'y', coord: 1, angle: Math.PI / 2 },
   D: { axis: 'y', coord: -1, angle: Math.PI / 2 },
+  "D'": { axis: 'y', coord: -1, angle: -Math.PI / 2 },
   R: { axis: 'x', coord: 1, angle: -Math.PI / 2 },
+  "R'": { axis: 'x', coord: 1, angle: Math.PI / 2 },
   L: { axis: 'x', coord: -1, angle: Math.PI / 2 },
+  "L'": { axis: 'x', coord: -1, angle: -Math.PI / 2 },
   F: { axis: 'z', coord: 1, angle: -Math.PI / 2 },
+  "F'": { axis: 'z', coord: 1, angle: Math.PI / 2 },
   B: { axis: 'z', coord: -1, angle: Math.PI / 2 },
+  "B'": { axis: 'z', coord: -1, angle: -Math.PI / 2 },
 }
 
 const MOVE_OPTIONS = Object.keys(MOVE_CONFIG) as Move[]
@@ -125,7 +146,7 @@ const createCubelets = (): CubeletData[] => {
 }
 
 const isSolved = (objects: THREE.Object3D[]) => {
-  const faces: Record<Move, Set<string>> = {
+  const faces: Record<FaceKey, Set<string>> = {
     U: new Set<string>(),
     D: new Set<string>(),
     L: new Set<string>(),
@@ -174,7 +195,7 @@ const isSolved = (objects: THREE.Object3D[]) => {
 }
 
 const Cube = forwardRef<CubeHandle, CubeProps>(function Cube(
-  { onMoveComplete, onRotateStateChange, onSolvedChange },
+  { highlightedCubeletIds = [], onMoveComplete, onRotateStateChange, onSolvedChange },
   ref,
 ) {
   const cubelets = useMemo(() => createCubelets(), [])
@@ -183,6 +204,7 @@ const Cube = forwardRef<CubeHandle, CubeProps>(function Cube(
   const cubeletRefs = useRef<Array<THREE.Group | null>>([])
   const moveQueueRef = useRef<Move[]>([])
   const activeRotationRef = useRef<RotationState | null>(null)
+  const [rotatingCubeletIds, setRotatingCubeletIds] = useState<string[]>([])
 
   useImperativeHandle(ref, () => ({
     enqueueMove(move) {
@@ -200,6 +222,18 @@ const Cube = forwardRef<CubeHandle, CubeProps>(function Cube(
       }
 
       moveQueueRef.current.push(...scrambleMoves)
+    },
+    getRootObject() {
+      return rootRef.current
+    },
+    getLayerCubeletIds(move) {
+      const config = MOVE_CONFIG[move]
+      return cubelets
+        .filter((cubelet) => {
+          const axisIndex = config.axis === 'x' ? 0 : config.axis === 'y' ? 1 : 2
+          return Math.abs(cubelet.position[axisIndex] / GAP - config.coord) < EPSILON
+        })
+        .map((cubelet) => cubelet.id)
     },
   }))
 
@@ -245,6 +279,9 @@ const Cube = forwardRef<CubeHandle, CubeProps>(function Cube(
       }
 
       activeRotationRef.current = activeRotation
+      setRotatingCubeletIds(
+        rotatingCubelets.map((cubelet) => String(cubelet.userData.cubeletId)),
+      )
       onRotateStateChange(true)
       onSolvedChange(false)
     }
@@ -272,6 +309,7 @@ const Cube = forwardRef<CubeHandle, CubeProps>(function Cube(
     pivot.updateMatrixWorld(true)
 
     activeRotationRef.current = null
+    setRotatingCubeletIds([])
     onMoveComplete(activeRotation.move)
     onRotateStateChange(false)
     onSolvedChange(isSolved(cubeletRefs.current.filter(Boolean) as THREE.Object3D[]))
@@ -285,9 +323,16 @@ const Cube = forwardRef<CubeHandle, CubeProps>(function Cube(
           key={cubelet.id}
           ref={(node) => {
             cubeletRefs.current[index] = node
+            if (node) {
+              node.userData.cubeletId = cubelet.id
+            }
           }}
           position={cubelet.position}
           colors={cubelet.colors}
+          highlighted={
+            highlightedCubeletIds.includes(cubelet.id) ||
+            rotatingCubeletIds.includes(cubelet.id)
+          }
         />
       ))}
     </group>

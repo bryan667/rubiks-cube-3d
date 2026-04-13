@@ -1,5 +1,6 @@
 ## 3D Rubik's Cube Web Game 🧊 
 React + TypeScript + Vite
+https://rubiks-cube-3d-beryl.vercel.app/
 
 A simple 3D Rubik’s Cube built for the browser. Spin, scramble, and mess around with it whenever you’re bored.
 

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment, OrbitControls } from '@react-three/drei'
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import Cube, { type CubeHandle, type Move } from './Cube'
+import TouchController from './TouchController'
 import './App.css'
 
 const MOVE_KEYS: Record<string, Move> = {
@@ -13,7 +15,20 @@ const MOVE_KEYS: Record<string, Move> = {
   b: 'B',
 }
 
-const FACE_MOVES: Move[] = ['U', 'D', 'L', 'R', 'F', 'B']
+const INVERSE_MOVES: Record<Move, Move> = {
+  U: "U'",
+  "U'": 'U',
+  D: "D'",
+  "D'": 'D',
+  L: "L'",
+  "L'": 'L',
+  R: "R'",
+  "R'": 'R',
+  F: "F'",
+  "F'": 'F',
+  B: "B'",
+  "B'": 'B',
+}
 
 const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60)
@@ -23,18 +38,17 @@ const formatTime = (seconds: number) => {
 
 function App() {
   const cubeRef = useRef<CubeHandle | null>(null)
+  const controlsRef = useRef<OrbitControlsImpl | null>(null)
   const pendingUndoTurnsRef = useRef(0)
   const [cubeInstance, setCubeInstance] = useState(0)
   const [moveCount, setMoveCount] = useState(0)
   const [history, setHistory] = useState<Move[]>([])
   const [isRotating, setIsRotating] = useState(false)
   const [isSolved, setIsSolved] = useState(true)
-  const [isZenMode, setIsZenMode] = useState(false)
   const [timerSeconds, setTimerSeconds] = useState(0)
   const [hasStarted, setHasStarted] = useState(false)
-  const [hintMessage, setHintMessage] = useState(
-    'Tap a move or drag the cube to get comfortable with the current angle.',
-  )
+  const [orbitEnabled, setOrbitEnabled] = useState(true)
+  const [highlightedCubeletIds, setHighlightedCubeletIds] = useState<string[]>([])
 
   const lastMove = history.at(-1) ?? 'None'
   const timerTone =
@@ -73,6 +87,12 @@ function App() {
     return () => window.clearInterval(timerId)
   }, [hasStarted, isSolved])
 
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.enabled = orbitEnabled && !isRotating
+    }
+  }, [isRotating, orbitEnabled])
+
   const handleReset = () => {
     setCubeInstance((value) => value + 1)
     setMoveCount(0)
@@ -81,14 +101,14 @@ function App() {
     setIsSolved(true)
     setHasStarted(false)
     setTimerSeconds(0)
-    setHintMessage('Tap a move or drag the cube to get comfortable with the current angle.')
+    setHighlightedCubeletIds([])
+    setOrbitEnabled(true)
   }
 
   const handleScramble = () => {
     setHasStarted(true)
     setTimerSeconds(0)
     setIsSolved(false)
-    setHintMessage('Scrambled. Start by solving one face and protecting it while you build the next layer.')
     cubeRef.current?.scramble(24)
   }
 
@@ -98,49 +118,30 @@ function App() {
       return
     }
 
-    pendingUndoTurnsRef.current = 3
-    cubeRef.current?.enqueueMove(previousMove)
-    cubeRef.current?.enqueueMove(previousMove)
-    cubeRef.current?.enqueueMove(previousMove)
-  }
-
-  const handleHint = () => {
-    const previousMove = history.at(-1)
-    if (previousMove) {
-      setHintMessage(
-        `Hint: inspect the layer affected by ${previousMove} and look for a single edge you can restore without breaking your strongest face.`,
-      )
-      return
-    }
-
-    setHintMessage(
-      'Hint: pick one face center and match its edge colors first. Corners are easier once the cross is stable.',
-    )
+    pendingUndoTurnsRef.current = 1
+    cubeRef.current?.enqueueMove(INVERSE_MOVES[previousMove])
   }
 
   return (
-    <main className={`app-shell${isZenMode ? ' zen-mode' : ''}`}>
+    <main className="app-shell">
       <header className="top-hud">
+        <div className="hud-pill move-pill">
+          <span className="timer-label">Moves</span>
+          <strong>{moveCount}</strong>
+        </div>
         <div className={`timer-pill ${timerTone}`}>
           <span className="timer-label">Time</span>
           <strong>{formatTime(timerSeconds)}</strong>
         </div>
-        <button
-          className="zen-toggle"
-          onClick={() => setIsZenMode((value) => !value)}
-          type="button"
-        >
-          {isZenMode ? 'Exit Zen' : 'Zen Mode'}
-        </button>
       </header>
 
       <section className="hero-panel">
         <div className="hero-copy">
-          <p className="eyebrow">Mobile-First Pass</p>
+          <p className="eyebrow">Touch-Interactive v2.0</p>
           <h1>3D Rubik&apos;s Cube</h1>
           <p className="lede">
-            Portrait-friendly layout, quiet top HUD, and bottom controls sized for
-            thumbs so the cube stays comfortable on a phone.
+            Touch a visible cubie to lock the camera, drag past the threshold to
+            select a layer, and release to snap the turn with a mobile-friendly click.
           </p>
         </div>
 
@@ -152,12 +153,12 @@ function App() {
             </strong>
           </article>
           <article className="status-card">
-            <span className="status-label">Moves</span>
-            <strong>{moveCount}</strong>
-          </article>
-          <article className="status-card">
             <span className="status-label">Last Move</span>
             <strong>{lastMove}</strong>
+          </article>
+          <article className="status-card">
+            <span className="status-label">Orbit</span>
+            <strong>{orbitEnabled && !isRotating ? 'Free' : 'Locked'}</strong>
           </article>
         </div>
       </section>
@@ -173,16 +174,18 @@ function App() {
             <Cube
               key={cubeInstance}
               ref={cubeRef}
+              highlightedCubeletIds={highlightedCubeletIds}
               onMoveComplete={(move) => {
                 setHasStarted(true)
 
+                if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+                  navigator.vibrate(10)
+                }
+
                 if (pendingUndoTurnsRef.current > 0) {
                   pendingUndoTurnsRef.current -= 1
-
-                  if (pendingUndoTurnsRef.current === 0) {
-                    setMoveCount((count) => Math.max(0, count - 1))
-                    setHistory((entries) => entries.slice(0, -1))
-                  }
+                  setMoveCount((count) => Math.max(0, count - 1))
+                  setHistory((entries) => entries.slice(0, -1))
                   return
                 }
 
@@ -192,18 +195,31 @@ function App() {
               onRotateStateChange={setIsRotating}
               onSolvedChange={setIsSolved}
             />
+            <TouchController
+              cubeRef={cubeRef}
+              isRotating={isRotating}
+              onHighlightChange={setHighlightedCubeletIds}
+              onOrbitEnabledChange={setOrbitEnabled}
+            />
             <Environment preset="city" />
-            <OrbitControls enableDamping dampingFactor={0.08} minDistance={7} maxDistance={16} />
+            <OrbitControls
+              ref={controlsRef}
+              enabled={orbitEnabled && !isRotating}
+              enableDamping
+              dampingFactor={0.08}
+              minDistance={7}
+              maxDistance={16}
+            />
           </Canvas>
           <div className="canvas-caption">
-            Drag to orbit. Pinch or scroll to zoom. The cube stays in the upper focus
-            area on portrait screens.
+            Touch a cubie to rotate a layer. Start on empty space to orbit the camera.
+            Pinch or scroll to zoom.
           </div>
         </div>
 
         <aside className="control-panel">
           <div className="panel-block thumb-zone">
-            <h2>Quick Actions</h2>
+            <h2>Action Bar</h2>
             <div className="primary-actions">
               <button
                 className="action-button primary"
@@ -219,49 +235,18 @@ function App() {
               >
                 Undo
               </button>
-              <button className="action-button" onClick={handleHint} disabled={isRotating}>
-                Hint
+              <button className="action-button" onClick={handleReset} disabled={isRotating}>
+                Reset
               </button>
-            </div>
-          </div>
-
-          <div className="panel-block">
-            <h2>Face Turns</h2>
-            <div className="moves-grid">
-              {FACE_MOVES.map((move) => (
-                <button
-                  key={move}
-                  className="move-button"
-                  onClick={() => {
-                    setHasStarted(true)
-                    cubeRef.current?.enqueueMove(move)
-                  }}
-                  disabled={isRotating}
-                >
-                  {move}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="panel-block">
-            <h2>Session</h2>
-            <div className="action-list compact-actions">
-              <button className="action-button" onClick={handleReset}>
-                Reset Cube
-              </button>
-              <div className="hint-card" role="status" aria-live="polite">
-                {hintMessage}
-              </div>
             </div>
           </div>
 
           <div className="panel-block desktop-only">
-            <h2>How It Works</h2>
+            <h2>Touch Logic</h2>
             <ul className="hint-list">
-              <li>The cube uses 26 independent cubelets with dark internal faces.</li>
-              <li>Each move groups 9 cubelets under a temporary pivot and animates a 90 degree turn.</li>
-              <li>Win detection checks whether every outer face shows one uniform color.</li>
+              <li>Touching the cube locks orbit controls until the gesture finishes.</li>
+              <li>Dragging more than 5 pixels selects a layer and highlights the 9 active cubies.</li>
+              <li>Releasing the gesture queues a snapped quarter-turn and restores camera orbit.</li>
             </ul>
           </div>
         </aside>

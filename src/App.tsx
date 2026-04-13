@@ -11,14 +11,20 @@ const INVERSE_MOVES: Record<Move, Move> = {
   "U'": 'U',
   D: "D'",
   "D'": 'D',
+  E: "E'",
+  "E'": 'E',
   L: "L'",
   "L'": 'L',
   R: "R'",
   "R'": 'R',
+  M: "M'",
+  "M'": 'M',
   F: "F'",
   "F'": 'F',
   B: "B'",
   "B'": 'B',
+  S: "S'",
+  "S'": 'S',
 }
 
 const formatTime = (seconds: number) => {

@@ -34,14 +34,20 @@ const MOVE_CONFIG: Record<Move, { axis: AxisKey; coord: number; angle: number }>
   "U'": { axis: 'y', coord: 1, angle: Math.PI / 2 },
   D: { axis: 'y', coord: -1, angle: Math.PI / 2 },
   "D'": { axis: 'y', coord: -1, angle: -Math.PI / 2 },
+  E: { axis: 'y', coord: 0, angle: Math.PI / 2 },
+  "E'": { axis: 'y', coord: 0, angle: -Math.PI / 2 },
   R: { axis: 'x', coord: 1, angle: -Math.PI / 2 },
   "R'": { axis: 'x', coord: 1, angle: Math.PI / 2 },
   L: { axis: 'x', coord: -1, angle: Math.PI / 2 },
   "L'": { axis: 'x', coord: -1, angle: -Math.PI / 2 },
+  M: { axis: 'x', coord: 0, angle: Math.PI / 2 },
+  "M'": { axis: 'x', coord: 0, angle: -Math.PI / 2 },
   F: { axis: 'z', coord: 1, angle: -Math.PI / 2 },
   "F'": { axis: 'z', coord: 1, angle: Math.PI / 2 },
   B: { axis: 'z', coord: -1, angle: Math.PI / 2 },
   "B'": { axis: 'z', coord: -1, angle: -Math.PI / 2 },
+  S: { axis: 'z', coord: 0, angle: -Math.PI / 2 },
+  "S'": { axis: 'z', coord: 0, angle: Math.PI / 2 },
 }
 
 const snapFace = (normal: THREE.Vector3): FaceKey => {
@@ -109,10 +115,6 @@ const getCandidateMoves = (touchHit: TouchHit): CandidateMove[] => {
     }
 
     const coord = touchHit.layerCoords[axis]
-    if (Math.abs(coord) !== 1) {
-      return
-    }
-
     Object.entries(MOVE_CONFIG).forEach(([move, config]) => {
       if (config.axis === axis && config.coord === coord) {
         candidateMoves.push({

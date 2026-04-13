@@ -40,14 +40,20 @@ export type Move =
   | "U'"
   | 'D'
   | "D'"
+  | 'E'
+  | "E'"
   | 'L'
   | "L'"
   | 'R'
   | "R'"
+  | 'M'
+  | "M'"
   | 'F'
   | "F'"
   | 'B'
   | "B'"
+  | 'S'
+  | "S'"
 
 export type CubeHandle = {
   enqueueMove: (move: Move) => void
@@ -82,14 +88,20 @@ const MOVE_CONFIG: Record<Move, { axis: 'x' | 'y' | 'z'; coord: number; angle: n
   "U'": { axis: 'y', coord: 1, angle: Math.PI / 2 },
   D: { axis: 'y', coord: -1, angle: Math.PI / 2 },
   "D'": { axis: 'y', coord: -1, angle: -Math.PI / 2 },
+  E: { axis: 'y', coord: 0, angle: Math.PI / 2 },
+  "E'": { axis: 'y', coord: 0, angle: -Math.PI / 2 },
   R: { axis: 'x', coord: 1, angle: -Math.PI / 2 },
   "R'": { axis: 'x', coord: 1, angle: Math.PI / 2 },
   L: { axis: 'x', coord: -1, angle: Math.PI / 2 },
   "L'": { axis: 'x', coord: -1, angle: -Math.PI / 2 },
+  M: { axis: 'x', coord: 0, angle: Math.PI / 2 },
+  "M'": { axis: 'x', coord: 0, angle: -Math.PI / 2 },
   F: { axis: 'z', coord: 1, angle: -Math.PI / 2 },
   "F'": { axis: 'z', coord: 1, angle: Math.PI / 2 },
   B: { axis: 'z', coord: -1, angle: Math.PI / 2 },
   "B'": { axis: 'z', coord: -1, angle: -Math.PI / 2 },
+  S: { axis: 'z', coord: 0, angle: -Math.PI / 2 },
+  "S'": { axis: 'z', coord: 0, angle: Math.PI / 2 },
 }
 
 const MOVE_OPTIONS = Object.keys(MOVE_CONFIG) as Move[]

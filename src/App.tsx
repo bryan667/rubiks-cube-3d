@@ -6,15 +6,6 @@ import Cube, { type CubeHandle, type Move } from './Cube'
 import TouchController from './TouchController'
 import './App.css'
 
-const MOVE_KEYS: Record<string, Move> = {
-  u: 'U',
-  d: 'D',
-  l: 'L',
-  r: 'R',
-  f: 'F',
-  b: 'B',
-}
-
 const INVERSE_MOVES: Record<Move, Move> = {
   U: "U'",
   "U'": 'U',
@@ -55,27 +46,6 @@ function App() {
     timerSeconds >= 90 ? 'timer-hot' : timerSeconds >= 45 ? 'timer-warm' : 'timer-cool'
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
-        return
-      }
-
-      const move = MOVE_KEYS[event.key.toLowerCase()]
-      if (!move) {
-        return
-      }
-
-      event.preventDefault()
-      setHasStarted(true)
-      cubeRef.current?.enqueueMove(move)
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
-
-  useEffect(() => {
     if (!hasStarted || isSolved) {
       return
     }
@@ -90,6 +60,9 @@ function App() {
   useEffect(() => {
     if (controlsRef.current) {
       controlsRef.current.enabled = orbitEnabled && !isRotating
+      controlsRef.current.enablePan = false
+      controlsRef.current.target.set(0, 0, 0)
+      controlsRef.current.update()
     }
   }, [isRotating, orbitEnabled])
 
@@ -137,12 +110,8 @@ function App() {
 
       <section className="hero-panel">
         <div className="hero-copy">
-          <p className="eyebrow">Touch-Interactive v2.0</p>
+          <p className="eyebrow">Touch-Interactive</p>
           <h1>3D Rubik&apos;s Cube</h1>
-          <p className="lede">
-            Touch a visible cubie to lock the camera, drag past the threshold to
-            select a layer, and release to snap the turn with a mobile-friendly click.
-          </p>
         </div>
 
         <div className="status-grid">
@@ -205,10 +174,12 @@ function App() {
             <OrbitControls
               ref={controlsRef}
               enabled={orbitEnabled && !isRotating}
+              enablePan={false}
               enableDamping
               dampingFactor={0.08}
               minDistance={7}
               maxDistance={16}
+              target={[0, 0, 0]}
             />
           </Canvas>
           <div className="canvas-caption">
@@ -239,15 +210,6 @@ function App() {
                 Reset
               </button>
             </div>
-          </div>
-
-          <div className="panel-block desktop-only">
-            <h2>Touch Logic</h2>
-            <ul className="hint-list">
-              <li>Touching the cube locks orbit controls until the gesture finishes.</li>
-              <li>Dragging more than 5 pixels selects a layer and highlights the 9 active cubies.</li>
-              <li>Releasing the gesture queues a snapped quarter-turn and restores camera orbit.</li>
-            </ul>
           </div>
         </aside>
       </section>

@@ -19,8 +19,8 @@ const FACE_COLORS = {
   D: '#facc15',
   R: '#ef4444',
   L: '#f97316',
-  F: '#2563eb',
-  B: '#22c55e',
+  F: '#22c55e',
+  B: '#2563eb',
   INNER: '#111827',
 } as const
 

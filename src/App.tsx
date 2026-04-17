@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment, OrbitControls } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
+import * as THREE from 'three'
 import Cube, { type CubeHandle, type Move } from './Cube'
 import TouchController from './TouchController'
 import './App.css'
@@ -31,6 +32,50 @@ const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60)
   const remainder = seconds % 60
   return `${minutes}:${remainder.toString().padStart(2, '0')}`
+}
+
+const SKY_VERTEX_SHADER = `
+  varying vec3 vWorldPosition;
+
+  void main() {
+    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vWorldPosition = worldPosition.xyz;
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+  }
+`
+
+const SKY_FRAGMENT_SHADER = `
+  varying vec3 vWorldPosition;
+
+  void main() {
+    float height = normalize(vWorldPosition).y * 0.5 + 0.5;
+    vec3 horizon = vec3(0.86, 0.95, 1.0);
+    vec3 midSky = vec3(0.52, 0.77, 0.98);
+    vec3 zenith = vec3(0.14, 0.42, 0.82);
+    vec3 warmGlow = vec3(1.0, 0.89, 0.73);
+
+    vec3 base = mix(horizon, midSky, smoothstep(0.12, 0.58, height));
+    base = mix(base, zenith, smoothstep(0.58, 1.0, height));
+
+    float sunBand = smoothstep(0.0, 0.35, 1.0 - abs(height - 0.3) * 2.6);
+    vec3 color = mix(base, warmGlow, sunBand * 0.18);
+
+    gl_FragColor = vec4(color, 1.0);
+  }
+`
+
+function SkyGradient() {
+  return (
+    <mesh scale={90} renderOrder={-1000}>
+      <sphereGeometry args={[1, 48, 48]} />
+      <shaderMaterial
+        side={THREE.BackSide}
+        depthWrite={false}
+        vertexShader={SKY_VERTEX_SHADER}
+        fragmentShader={SKY_FRAGMENT_SHADER}
+      />
+    </mesh>
+  )
 }
 
 function App() {
@@ -149,8 +194,9 @@ function App() {
       <section className="playground">
         <div className="canvas-card">
           <Canvas dpr={[1, 2]} camera={{ position: [7.5, 7, 9], fov: 42 }}>
-            <color attach="background" args={['#0e1726']} />
-            <fog attach="fog" args={['#0e1726', 12, 24]} />
+            <color attach="background" args={['#d9efff']} />
+            <fog attach="fog" args={['#d9efff', 20, 36]} />
+            <SkyGradient />
             <ambientLight intensity={1.2} />
             <directionalLight position={[8, 10, 6]} intensity={2.4} castShadow />
             <directionalLight position={[-6, -4, -8]} intensity={0.7} />

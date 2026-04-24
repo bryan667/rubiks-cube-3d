@@ -3,9 +3,9 @@ import { Canvas } from '@react-three/fiber'
 import { Environment, OrbitControls } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
-import Cube, { type CubeHandle, type Move } from './Cube'
-import MegaminxView from './MegaminxView'
-import TouchController from './TouchController'
+import Cube, { type CubeHandle, type Move } from './rubiks-cube/Cube'
+import MegaminxView from './megaminx/MegaminxView'
+import TouchController from './rubiks-cube/TouchController'
 import './App.css'
 
 const INVERSE_MOVES: Record<Move, Move> = {

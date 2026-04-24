@@ -1,7 +1,16 @@
-import {rotate_point,rToD} from "./utils.js";
+/* eslint-disable prefer-const */
+import { rotate_point, rToD } from './utils'
+import type { ColorName, Point2D } from './types'
 
 // Calculates what turn to make when attempting to move a piece
-function calculateTurn(startPoint,newPoint,selectedSide,selectedPiece,touchedEdge){
+function calculateTurn(
+  startPoint: Point2D | null,
+  newPoint: Point2D | null,
+  selectedSide: ColorName | null,
+  selectedPiece: number | null,
+  touchedEdge?: boolean,
+): string | undefined {
+    if (!startPoint || !selectedSide || selectedPiece === null) return;
     if(!newPoint) return;
     // Mouse/Touch turns for edges
     if(selectedPiece===8){

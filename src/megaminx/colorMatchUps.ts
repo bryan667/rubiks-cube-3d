@@ -1,4 +1,6 @@
-let colorMatchUps = {
+import type { FaceKey, MatchRef } from './types'
+
+const colorMatchUps: Record<FaceKey, Record<string, MatchRef>> = {
     face1 : { // blue
         //center edge
         "1" : {side: 5,pos: 17},
@@ -263,4 +265,4 @@ let colorMatchUps = {
     }
 }
 
-export default colorMatchUps;
+export default colorMatchUps

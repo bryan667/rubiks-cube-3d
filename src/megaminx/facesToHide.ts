@@ -1,4 +1,6 @@
-let facesToHide = {
+import type { FaceKey, FacePieceRef } from './types'
+
+const facesToHide: Record<FaceKey, FacePieceRef[]> = {
     // Blue
     face1 : [
         // Pink side
@@ -336,4 +338,4 @@ let facesToHide = {
     ]
 }
 
-export default facesToHide;
+export default facesToHide

@@ -1,14 +1,26 @@
+/* eslint-disable prefer-const */
+import type { Mesh, MeshBasicMaterial } from 'three'
+import type { ColorName, DecaObject, FaceKey } from './types'
+
+type ColorMesh = Mesh & { material: MeshBasicMaterial }
+
+interface EdgeSet {
+  left: ColorMesh
+  center: ColorMesh
+  right: ColorMesh
+}
+
 // Changes decaObject directly
-let swapColors = (face,deca,speed) =>{
+const swapColors = (face: FaceKey, deca: DecaObject, speed: number) => {
 
     // Pulls the hex color value from piece
-    let hex = piece => piece.material.color.getHex();
+    let hex = (piece: ColorMesh) => piece.material.color.getHex();
 
     // Copies b's color to a
-    let setColor = (a,b) => a.material.color.set(hex(b));
+    let setColor = (a: ColorMesh, b: ColorMesh) => a.material.color.set(hex(b));
 
     // Variables used for rotating front colors
-    let front =  deca[face].front;
+    let front = deca[face].front as ColorMesh[];
     let tempColor = hex(front[3]);
     let tempColor2 = hex(front[13]);
 
@@ -40,8 +52,8 @@ let swapColors = (face,deca,speed) =>{
     }
 
     // Converts color to side number
-    let side = color => {
-        let colors = {
+    let side = (color: ColorName) => {
+        const colors: Record<ColorName, number> = {
             "blue": 1,
             "pink": 2,
             "yellow": 3,
@@ -59,16 +71,16 @@ let swapColors = (face,deca,speed) =>{
     }
 
     // extracts piece information given side and piece numbers
-    let extractEdge = (sideColor,pieces) => {
+    let extractEdge = (sideColor: ColorName, pieces: number[]): EdgeSet => {
         return {
-            left: deca[`face${side(sideColor)}`].front[pieces[0]],
-            center: deca[`face${side(sideColor)}`].front[pieces[1]],
-            right: deca[`face${side(sideColor)}`].front[pieces[2]]
+            left: deca[`face${side(sideColor)}` as FaceKey].front[pieces[0]] as ColorMesh,
+            center: deca[`face${side(sideColor)}` as FaceKey].front[pieces[1]] as ColorMesh,
+            right: deca[`face${side(sideColor)}` as FaceKey].front[pieces[2]] as ColorMesh
         }
     }
 
     // Rotate colors around clockwise or counterclockwise depending on speed
-    let swap = (e1,e2,e3,e4,e5,speed) => {
+    let swap = (e1: EdgeSet, e2: EdgeSet, e3: EdgeSet, e4: EdgeSet, e5: EdgeSet, speed: number) => {
         let tempLeft = hex(e1.left);
         let tempCenter = hex(e1.center);
         let tempRight = hex(e1.right);
@@ -117,7 +129,7 @@ let swapColors = (face,deca,speed) =>{
     }
 
     // Variables for edge data
-    let edge1,edge2,edge3,edge4,edge5;
+    let edge1: EdgeSet, edge2: EdgeSet, edge3: EdgeSet, edge4: EdgeSet, edge5: EdgeSet;
 
     // Controls which side edge colors will be rotated with each front face
     switch(face){
@@ -235,4 +247,4 @@ let swapColors = (face,deca,speed) =>{
     }
 }
 
-export default swapColors;
+export default swapColors

@@ -3,14 +3,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-expressions */
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
-import Corner from './megaminx/CornerDimensions.js'
-import Edge from './megaminx/EdgeDimensions.js'
-import swapColors from './megaminx/swapColors.js'
-import facesToHide from './megaminx/facesToHide.js'
-import colorMatchUps from './megaminx/colorMatchUps.js'
-import facePos from './megaminx/facePositions.js'
-import calculateTurn from './megaminx/calculateTurn.js'
-import { CameraControls, dToR } from './megaminx/utils.js'
+import Corner from './CornerDimensions'
+import Edge from './EdgeDimensions'
+import swapColors from './swapColors'
+import facesToHide from './facesToHide'
+import colorMatchUps from './colorMatchUps'
+import facePos from './facePositions'
+import calculateTurn from './calculateTurn'
+import { CameraControls, dToR } from './utils'
 
 const DEFAULT_FACE_COLORS = [
   '#0000ff',
@@ -72,26 +72,10 @@ const createScramble = () => {
 }
 
 const getCenterStickerOffset = (faceIndex: number) => {
-  if (faceIndex === 0) {
-    return 0.02
-  }
-
-  if (faceIndex === 6) {
-    return -0.02
-  }
-
   return faceIndex < 6 ? 0.01 : -0.01
 }
 
 const getPieceStickerOffset = (faceIndex: number) => {
-  if (faceIndex === 0) {
-    return 0.012
-  }
-
-  if (faceIndex === 6) {
-    return -0.012
-  }
-
   return faceIndex < 6 ? 0.005 : -0.005
 }
 

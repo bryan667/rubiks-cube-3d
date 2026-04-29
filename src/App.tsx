@@ -4,7 +4,6 @@ import { Environment, OrbitControls } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import Cube, { type CubeHandle, type Move } from './rubiks-cube/Cube'
-import MegaminxView from './megaminx/MegaminxView'
 import TouchController from './rubiks-cube/TouchController'
 import './App.css'
 
@@ -80,7 +79,6 @@ function SkyGradient() {
 }
 
 function App() {
-  const [activePuzzle, setActivePuzzle] = useState<'cube' | 'megaminx'>('cube')
   const cubeRef = useRef<CubeHandle | null>(null)
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
   const pendingUndoTurnsRef = useRef(0)
@@ -99,10 +97,6 @@ function App() {
     timerSeconds >= 90 ? 'timer-hot' : timerSeconds >= 45 ? 'timer-warm' : 'timer-cool'
 
   useEffect(() => {
-    if (activePuzzle !== 'cube') {
-      return
-    }
-
     if (!hasStarted || isSolved) {
       return
     }
@@ -112,7 +106,7 @@ function App() {
     }, 1000)
 
     return () => window.clearInterval(timerId)
-  }, [activePuzzle, hasStarted, isSolved])
+  }, [hasStarted, isSolved])
 
   useEffect(() => {
     if (controlsRef.current) {
@@ -162,170 +156,123 @@ function App() {
 
   return (
     <main className="app-shell">
-      <div className="puzzle-tabs" role="tablist" aria-label="Puzzle Type">
-        <button
-          className={`puzzle-tab${activePuzzle === 'cube' ? ' active' : ''}`}
-          onClick={() => setActivePuzzle('cube')}
-          type="button"
-        >
-          Rubik&apos;s Cube
-        </button>
-        <button
-          className={`puzzle-tab${activePuzzle === 'megaminx' ? ' active' : ''}`}
-          onClick={() => setActivePuzzle('megaminx')}
-          type="button"
-        >
-          Megaminx
-        </button>
-      </div>
-
       <header className="top-hud">
         <div className="hud-pill move-pill">
-          <span className="timer-label">{activePuzzle === 'cube' ? 'Moves' : 'Mode'}</span>
-          <strong>{activePuzzle === 'cube' ? moveCount : 'Megaminx'}</strong>
+          <span className="timer-label">Moves</span>
+          <strong>{moveCount}</strong>
         </div>
         <div className={`timer-pill ${timerTone}`}>
-          <span className="timer-label">{activePuzzle === 'cube' ? 'Time' : 'Challenge'}</span>
-          <strong>{activePuzzle === 'cube' ? formatTime(timerSeconds) : '12 Faces'}</strong>
+          <span className="timer-label">Time</span>
+          <strong>{formatTime(timerSeconds)}</strong>
         </div>
       </header>
 
-      {activePuzzle === 'cube' ? (
-        <>
-          <section className="hero-panel">
-            <div className="hero-copy">
-              <p className="eyebrow">Touch-Interactive</p>
-              <h1>3D Rubik&apos;s Cube</h1>
+      <section className="hero-panel">
+        <div className="hero-copy">
+          <p className="eyebrow">Touch-Interactive</p>
+          <h1>3D Rubik&apos;s Cube</h1>
+        </div>
+
+        <div className="status-grid">
+          <article className="status-card">
+            <span className="status-label">State</span>
+            <strong className={isSolved ? 'solved' : 'scrambled'}>
+              {isSolved ? 'Solved' : 'In Progress'}
+            </strong>
+          </article>
+          <article className="status-card">
+            <span className="status-label">Last Move</span>
+            <strong>{lastMove}</strong>
+          </article>
+          <article className="status-card">
+            <span className="status-label">Orbit</span>
+            <strong>{orbitEnabled && !isRotating ? 'Free' : 'Locked'}</strong>
+          </article>
+        </div>
+      </section>
+
+      <section className="playground">
+        <div className="canvas-card">
+          <Canvas dpr={[1, 2]} camera={{ position: [7.5, 7, 9], fov: 42 }}>
+            <color attach="background" args={['#d9efff']} />
+            <fog attach="fog" args={['#d9efff', 20, 36]} />
+            <SkyGradient />
+            <ambientLight intensity={1.2} />
+            <directionalLight position={[8, 10, 6]} intensity={2.4} castShadow />
+            <directionalLight position={[-6, -4, -8]} intensity={0.7} />
+            <Cube
+              key={cubeInstance}
+              ref={cubeRef}
+              highlightedCubeletIds={highlightedCubeletIds}
+              onMoveComplete={(move) => {
+                setHasStarted(true)
+
+                if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+                  navigator.vibrate(10)
+                }
+
+                if (pendingUndoTurnsRef.current > 0) {
+                  pendingUndoTurnsRef.current -= 1
+                  setMoveCount((count) => Math.max(0, count - 1))
+                  setHistory((entries) => entries.slice(0, -1))
+                  return
+                }
+
+                setMoveCount((count) => count + 1)
+                setHistory((entries) => [...entries, move])
+              }}
+              onRotateStateChange={setIsRotating}
+              onSolvedChange={setIsSolved}
+            />
+            <TouchController
+              cubeRef={cubeRef}
+              isRotating={isRotating}
+              onHighlightChange={setHighlightedCubeletIds}
+              onOrbitEnabledChange={setOrbitEnabled}
+            />
+            <Environment preset="city" />
+            <OrbitControls
+              ref={controlsRef}
+              enabled={orbitEnabled && !isRotating}
+              enablePan={false}
+              enableDamping
+              dampingFactor={0.08}
+              minDistance={7}
+              maxDistance={16}
+              target={[0, 0, 0]}
+            />
+          </Canvas>
+          <div className="canvas-caption">
+            Touch a cubie to rotate a layer. Start on empty space to orbit the camera.
+            Pinch or scroll to zoom.
+          </div>
+        </div>
+
+        <aside className="control-panel">
+          <div className="panel-block thumb-zone">
+            <h2>Action Bar</h2>
+            <div className="primary-actions">
+              <button
+                className="action-button primary"
+                onClick={handleScramble}
+                disabled={isRotating}
+              >
+                Scramble
+              </button>
+              <button
+                className="action-button"
+                onClick={handleUndo}
+                disabled={isRotating || history.length === 0}
+              >
+                Undo
+              </button>
+              <button className="action-button" onClick={handleReset} disabled={isRotating}>
+                Reset
+              </button>
             </div>
-
-            <div className="status-grid">
-              <article className="status-card">
-                <span className="status-label">State</span>
-                <strong className={isSolved ? 'solved' : 'scrambled'}>
-                  {isSolved ? 'Solved' : 'In Progress'}
-                </strong>
-              </article>
-              <article className="status-card">
-                <span className="status-label">Last Move</span>
-                <strong>{lastMove}</strong>
-              </article>
-              <article className="status-card">
-                <span className="status-label">Orbit</span>
-                <strong>{orbitEnabled && !isRotating ? 'Free' : 'Locked'}</strong>
-              </article>
-            </div>
-          </section>
-
-          <section className="playground">
-            <div className="canvas-card">
-              <Canvas dpr={[1, 2]} camera={{ position: [7.5, 7, 9], fov: 42 }}>
-                <color attach="background" args={['#d9efff']} />
-                <fog attach="fog" args={['#d9efff', 20, 36]} />
-                <SkyGradient />
-                <ambientLight intensity={1.2} />
-                <directionalLight position={[8, 10, 6]} intensity={2.4} castShadow />
-                <directionalLight position={[-6, -4, -8]} intensity={0.7} />
-                <Cube
-                  key={cubeInstance}
-                  ref={cubeRef}
-                  highlightedCubeletIds={highlightedCubeletIds}
-                  onMoveComplete={(move) => {
-                    setHasStarted(true)
-
-                    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-                      navigator.vibrate(10)
-                    }
-
-                    if (pendingUndoTurnsRef.current > 0) {
-                      pendingUndoTurnsRef.current -= 1
-                      setMoveCount((count) => Math.max(0, count - 1))
-                      setHistory((entries) => entries.slice(0, -1))
-                      return
-                    }
-
-                    setMoveCount((count) => count + 1)
-                    setHistory((entries) => [...entries, move])
-                  }}
-                  onRotateStateChange={setIsRotating}
-                  onSolvedChange={setIsSolved}
-                />
-                <TouchController
-                  cubeRef={cubeRef}
-                  isRotating={isRotating}
-                  onHighlightChange={setHighlightedCubeletIds}
-                  onOrbitEnabledChange={setOrbitEnabled}
-                />
-                <Environment preset="city" />
-                <OrbitControls
-                  ref={controlsRef}
-                  enabled={orbitEnabled && !isRotating}
-                  enablePan={false}
-                  enableDamping
-                  dampingFactor={0.08}
-                  minDistance={7}
-                  maxDistance={16}
-                  target={[0, 0, 0]}
-                />
-              </Canvas>
-              <div className="canvas-caption">
-                Touch a cubie to rotate a layer. Start on empty space to orbit the camera.
-                Pinch or scroll to zoom.
-              </div>
-            </div>
-
-            <aside className="control-panel">
-              <div className="panel-block thumb-zone">
-                <h2>Action Bar</h2>
-                <div className="primary-actions">
-                  <button
-                    className="action-button primary"
-                    onClick={handleScramble}
-                    disabled={isRotating}
-                  >
-                    Scramble
-                  </button>
-                  <button
-                    className="action-button"
-                    onClick={handleUndo}
-                    disabled={isRotating || history.length === 0}
-                  >
-                    Undo
-                  </button>
-                  <button className="action-button" onClick={handleReset} disabled={isRotating}>
-                    Reset
-                  </button>
-                </div>
-              </div>
-            </aside>
-          </section>
-        </>
-      ) : (
-        <>
-          <section className="hero-panel">
-            <div className="hero-copy">
-              <p className="eyebrow">Touch-Interactive</p>
-              <h1>Megaminx</h1>
-            </div>
-
-            <div className="status-grid">
-              <article className="status-card">
-                <span className="status-label">Puzzle</span>
-                <strong>Megaminx</strong>
-              </article>
-              <article className="status-card">
-                <span className="status-label">Playstyle</span>
-                <strong>Touch + Drag</strong>
-              </article>
-              <article className="status-card">
-                <span className="status-label">Faces</span>
-                <strong>12</strong>
-              </article>
-            </div>
-          </section>
-
-          <MegaminxView />
-        </>
-      )}
+          </div>
+        </aside>
+      </section>
     </main>
   )
 }

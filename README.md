@@ -1,7 +1,7 @@
 ## Deployed to vercel
 https://rubiks-cube-3d-beryl.vercel.app/
 
-## 3D Rubik's Cube Web Game 🧊 
+## 3D Rubik's Cube + Megaminx Web Game 
 React + TypeScript + Vite
 A simple 3D Rubik’s Cube built for the browser. Spin, scramble, and mess around with it whenever you’re bored.
 

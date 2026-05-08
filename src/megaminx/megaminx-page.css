@@ -1,0 +1,46 @@
+.megaminx-page {
+  min-height: 100vh;
+}
+
+.megaminx-page-copy {
+  position: fixed;
+  top: 80px;
+  left: 16px;
+  z-index: 25;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 16px 18px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 20px;
+  color: #dbeafe;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.78)),
+    rgba(2, 6, 23, 0.68);
+  box-shadow: 0 24px 50px rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(16px);
+  pointer-events: none;
+}
+
+.megaminx-kicker {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
+.megaminx-page-copy h1 {
+  margin-bottom: 8px;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+}
+
+.megaminx-page-copy p:last-child {
+  max-width: 36ch;
+  color: #bfdbfe;
+}
+
+@media (max-width: 720px) {
+  .megaminx-page-copy {
+    top: 76px;
+    padding: 14px 16px;
+  }
+}

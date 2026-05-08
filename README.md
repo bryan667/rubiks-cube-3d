@@ -3,7 +3,7 @@ https://rubiks-cube-3d-beryl.vercel.app/
 
 ## 3D Rubik's Cube + Megaminx Web Game 
 React + TypeScript + Vite
-A simple 3D Rubik’s Cube built for the browser. Spin, scramble, and mess around with it whenever you’re bored.
+3D Rubik’s Cube built for the browser. Megaminx if you want something crazier. Spin, scramble, and mess around with it whenever you’re bored.
 
 ## Purpose 🎯
 This project wasn’t built to be perfect, it was built for fun.
